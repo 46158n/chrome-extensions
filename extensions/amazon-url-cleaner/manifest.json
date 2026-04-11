@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Amazon URL Cleaner",
+  "version": "1.0.0",
+  "description": "Redirects Amazon product URLs to clean /dp/ASIN format",
+  "permissions": ["declarativeNetRequest"],
+  "host_permissions": [
+    "*://*.amazon.co.jp/*",
+    "*://*.amazon.com/*"
+  ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "ruleset_1",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  }
+}
