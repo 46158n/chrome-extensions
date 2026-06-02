@@ -22,3 +22,12 @@ Amazon の商品 URL を `/dp/ASIN` 形式にリダイレクトする。
 | `amazon.com/gp/product/B08XYZ1234?tag=...` | `amazon.com/dp/B08XYZ1234` |
 
 対応ドメイン: `amazon.co.jp`, `amazon.com`
+
+### [url-memo-line](extensions/url-memo-line/)
+
+登録した URL でだけ、ページ右下に 1 行メモを表示する。
+
+- ツールバーの拡張機能アイコンから、開いている URL を登録 / 保存 / 解除できる
+- オプションページで登録済み URL とメモを一覧編集できる
+- URL は完全一致で判定し、ハッシュ部分だけは無視する
+- 対応 URL: `http://` / `https://`

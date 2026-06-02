@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "URL Memo Line",
+  "version": "1.0.0",
+  "description": "Shows a one-line memo only on URLs you register.",
+  "permissions": ["activeTab", "storage"],
+  "action": {
+    "default_title": "URL Memo Line",
+    "default_popup": "popup.html"
+  },
+  "options_page": "options.html",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

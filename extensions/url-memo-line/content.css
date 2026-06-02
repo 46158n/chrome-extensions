@@ -1,0 +1,53 @@
+#url-memo-line-root {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2147483647;
+  width: min(420px, calc(100vw - 32px));
+  color: #1f2933;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+#url-memo-line-root .url-memo-line-panel {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid rgba(31, 41, 51, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 28px rgba(31, 41, 51, 0.18);
+}
+
+#url-memo-line-root input {
+  min-width: 0;
+  height: 34px;
+  border: 1px solid #c7d0da;
+  border-radius: 6px;
+  padding: 0 10px;
+  color: #1f2933;
+  background: #ffffff;
+  font: 14px/1.2 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+#url-memo-line-root input:focus {
+  outline: 2px solid #5aa68b;
+  outline-offset: 2px;
+}
+
+#url-memo-line-root button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid #c7d0da;
+  border-radius: 6px;
+  padding: 0;
+  color: #344252;
+  background: #ffffff;
+  font: 18px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  cursor: pointer;
+}
+
+#url-memo-line-root button:hover {
+  background: #eef3f7;
+}

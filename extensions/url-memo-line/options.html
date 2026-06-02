@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>URL Memo Line Options</title>
+    <link rel="stylesheet" href="options.css">
+  </head>
+  <body>
+    <main class="page">
+      <header class="header">
+        <div>
+          <h1>URL Memo Line</h1>
+          <p>登録したURLでだけ、ページ右下に1行メモを表示します。</p>
+        </div>
+      </header>
+
+      <section class="section" aria-labelledby="addTitle">
+        <h2 id="addTitle">URLを追加</h2>
+        <form id="addForm" class="add-form">
+          <label>
+            <span>URL</span>
+            <input id="urlInput" type="url" required placeholder="https://example.com/path">
+          </label>
+          <label>
+            <span>メモ</span>
+            <input id="memoInput" type="text" maxlength="160" placeholder="1行メモ">
+          </label>
+          <button class="primary" type="submit">追加</button>
+        </form>
+        <p id="status" class="status" aria-live="polite"></p>
+      </section>
+
+      <section class="section" aria-labelledby="listTitle">
+        <h2 id="listTitle">登録済みURL</h2>
+        <div id="empty" class="empty">登録済みURLはありません。</div>
+        <div id="entries" class="entries"></div>
+      </section>
+    </main>
+
+    <template id="entryTemplate">
+      <article class="entry">
+        <div class="entry-main">
+          <a class="entry-url" target="_blank" rel="noreferrer"></a>
+          <input class="entry-note" type="text" maxlength="160" aria-label="メモ">
+        </div>
+        <button class="entry-remove" type="button">削除</button>
+      </article>
+    </template>
+
+    <script src="storage.js"></script>
+    <script src="options.js"></script>
+  </body>
+</html>
