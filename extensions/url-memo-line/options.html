@@ -11,16 +11,16 @@
       <header class="header">
         <div>
           <h1>URL Memo Line</h1>
-          <p>登録したURLでだけ、ページ右下に1行メモを表示します。</p>
+          <p>登録したドメインでだけ、ページ右下に1行メモを表示します。</p>
         </div>
       </header>
 
       <section class="section" aria-labelledby="addTitle">
-        <h2 id="addTitle">URLを追加</h2>
+        <h2 id="addTitle">ドメインを追加</h2>
         <form id="addForm" class="add-form">
           <label>
             <span>URL</span>
-            <input id="urlInput" type="url" required placeholder="https://example.com/path">
+            <input id="urlInput" type="url" required placeholder="https://example.com/">
           </label>
           <label>
             <span>メモ</span>
@@ -32,8 +32,8 @@
       </section>
 
       <section class="section" aria-labelledby="listTitle">
-        <h2 id="listTitle">登録済みURL</h2>
-        <div id="empty" class="empty">登録済みURLはありません。</div>
+        <h2 id="listTitle">登録済みドメイン</h2>
+        <div id="empty" class="empty">登録済みドメインはありません。</div>
         <div id="entries" class="entries"></div>
       </section>
     </main>

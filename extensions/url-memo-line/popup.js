@@ -37,7 +37,7 @@ async function loadCurrentUrl() {
   const entry = entries[currentUrl];
   memoEl.value = entry?.note || "";
   removeButton.disabled = !entry;
-  setStatus(entry ? "このURLは登録済みです。" : "このURLは未登録です。");
+  setStatus(entry ? "このドメインは登録済みです。" : "このドメインは未登録です。");
 }
 
 saveButton.addEventListener("click", async () => {

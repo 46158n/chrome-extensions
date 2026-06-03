@@ -4,8 +4,7 @@ const ROOT_ID = "url-memo-line-root";
 function normalizeUrl(rawUrl) {
   try {
     const url = new URL(rawUrl);
-    url.hash = "";
-    return url.toString();
+    return `${url.origin}/`;
   } catch {
     return "";
   }
@@ -17,7 +16,40 @@ function currentEntry(entries) {
 
 async function getEntries() {
   const result = await chrome.storage.local.get(STORE_KEY);
-  return result[STORE_KEY] || {};
+  const { entries, changed } = migrateEntries(result[STORE_KEY] || {});
+  if (changed) {
+    await chrome.storage.local.set({ [STORE_KEY]: entries });
+  }
+  return entries;
+}
+
+function isNewerEntry(entry, currentEntry) {
+  const entryTime = Date.parse(entry?.updatedAt || entry?.createdAt || "") || 0;
+  const currentTime = Date.parse(currentEntry?.updatedAt || currentEntry?.createdAt || "") || 0;
+  return entryTime >= currentTime;
+}
+
+function migrateEntries(entries) {
+  const migratedEntries = {};
+  let changed = false;
+
+  for (const [rawUrl, entry] of Object.entries(entries)) {
+    const url = normalizeUrl(rawUrl);
+    if (!url) {
+      migratedEntries[rawUrl] = entry;
+      continue;
+    }
+
+    if (url !== rawUrl || migratedEntries[url]) {
+      changed = true;
+    }
+
+    if (!migratedEntries[url] || isNewerEntry(entry, migratedEntries[url])) {
+      migratedEntries[url] = entry;
+    }
+  }
+
+  return { entries: migratedEntries, changed };
 }
 
 async function saveNote(note) {
