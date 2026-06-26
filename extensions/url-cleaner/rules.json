@@ -1,0 +1,74 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "regexSubstitution": "\\1/dp/\\2"
+      }
+    },
+    "condition": {
+      "regexFilter": "^(https://www\\.amazon\\.co\\.jp)/(?:[^/?#]*/)?(?:dp|gp/product)/([A-Z0-9]{10})(?:[/?#].*)?$",
+      "resourceTypes": [
+        "main_frame"
+      ]
+    }
+  },
+  {
+    "id": 2,
+    "priority": 1,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "regexSubstitution": "\\1/dp/\\2"
+      }
+    },
+    "condition": {
+      "regexFilter": "^(https://www\\.amazon\\.com)/(?:[^/?#]*/)?(?:dp|gp/product)/([A-Z0-9]{10})(?:[/?#].*)?$",
+      "resourceTypes": [
+        "main_frame"
+      ]
+    }
+  },
+  {
+    "id": 3,
+    "priority": 1,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "transform": {
+          "queryTransform": {
+            "removeParams": [
+              "scid",
+              "iasid",
+              "icm_cid",
+              "icm_agid",
+              "icm_acid",
+              "icm_kw",
+              "icm_mt",
+              "l-id",
+              "s-id",
+              "gclid",
+              "yclid",
+              "fbclid",
+              "msclkid",
+              "utm_source",
+              "utm_medium",
+              "utm_campaign",
+              "utm_term",
+              "utm_content",
+              "xuseflg_ichiba01"
+            ]
+          }
+        }
+      }
+    },
+    "condition": {
+      "urlFilter": "||rakuten.co.jp^",
+      "resourceTypes": [
+        "main_frame"
+      ]
+    }
+  }
+]
