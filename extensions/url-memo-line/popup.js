@@ -3,6 +3,8 @@ const statusEl = document.getElementById("status");
 const memoEl = document.getElementById("memo");
 const saveButton = document.getElementById("save");
 const removeButton = document.getElementById("remove");
+const clearMemoButton = document.getElementById("clearMemo");
+const copyMemoButton = document.getElementById("copyMemo");
 const openOptionsButton = document.getElementById("openOptions");
 
 let currentUrl = "";
@@ -20,6 +22,8 @@ function setDisabled(disabled) {
   memoEl.disabled = disabled;
   saveButton.disabled = disabled;
   removeButton.disabled = disabled || !currentUrl;
+  clearMemoButton.disabled = disabled;
+  copyMemoButton.disabled = disabled;
 }
 
 async function loadCurrentUrl() {
@@ -60,6 +64,17 @@ removeButton.addEventListener("click", async () => {
   memoEl.value = "";
   removeButton.disabled = true;
   setStatus("登録を解除しました。");
+});
+
+clearMemoButton.addEventListener("click", () => {
+  memoEl.value = "";
+  memoEl.focus();
+});
+
+copyMemoButton.addEventListener("click", async () => {
+  if (!memoEl.value) return;
+  await navigator.clipboard.writeText(memoEl.value);
+  setStatus("コピーしました。");
 });
 
 openOptionsButton.addEventListener("click", () => {

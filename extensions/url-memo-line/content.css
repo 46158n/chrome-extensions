@@ -10,7 +10,7 @@
 
 #url-memo-line-root .url-memo-line-panel {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr auto auto auto;
   gap: 8px;
   align-items: center;
   padding: 8px;
@@ -50,4 +50,10 @@
 
 #url-memo-line-root button:hover {
   background: #eef3f7;
+}
+
+#url-memo-line-root button.url-memo-line-sm {
+  width: auto;
+  padding: 0 8px;
+  font-size: 12px;
 }

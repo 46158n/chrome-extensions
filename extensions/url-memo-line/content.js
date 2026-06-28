@@ -81,12 +81,16 @@ function render(entry) {
     root.innerHTML = `
       <div class="url-memo-line-panel">
         <input type="text" maxlength="160" aria-label="URL memo">
+        <button type="button" class="url-memo-line-sm" title="クリア" aria-label="メモをクリア">クリア</button>
+        <button type="button" class="url-memo-line-sm" title="コピー" aria-label="メモをコピー">コピー</button>
         <button type="button" title="メモを隠す" aria-label="メモを隠す">×</button>
       </div>
     `;
     document.documentElement.append(root);
 
     const input = root.querySelector("input");
+    const [clearBtn, copyBtn, closeBtn] = root.querySelectorAll("button");
+
     input.addEventListener("change", () => saveNote(input.value));
     input.addEventListener("keydown", (event) => {
       if (event.key === "Enter") {
@@ -95,7 +99,14 @@ function render(entry) {
         saveNote(input.value);
       }
     });
-    root.querySelector("button").addEventListener("click", removeRoot);
+    clearBtn.addEventListener("click", () => {
+      input.value = "";
+      input.focus();
+    });
+    copyBtn.addEventListener("click", () => {
+      if (input.value) navigator.clipboard.writeText(input.value);
+    });
+    closeBtn.addEventListener("click", removeRoot);
   }
 
   const input = root.querySelector("input");

@@ -109,6 +109,12 @@ button:focus-visible {
   outline-offset: 2px;
 }
 
+.memo-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
 .actions {
   display: grid;
   grid-template-columns: 1fr auto;
