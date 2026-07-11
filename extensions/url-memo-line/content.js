@@ -146,5 +146,13 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   render(currentEntry(changes[STORE_KEY].newValue || {}));
 });
 
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "hidden") return;
+  const input = document.getElementById(ROOT_ID)?.querySelector("input");
+  if (input && document.activeElement === input) {
+    saveNote(input.value);
+  }
+});
+
 watchLocationChanges();
 refresh();
