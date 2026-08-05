@@ -3,7 +3,7 @@
   "name": "URL Memo Line",
   "version": "1.0.0",
   "description": "Shows a one-line memo only on domains you register.",
-  "permissions": ["activeTab", "storage"],
+  "permissions": ["activeTab", "storage", "scripting"],
   "action": {
     "default_title": "URL Memo Line",
     "default_popup": "popup.html"

@@ -5,9 +5,11 @@ const saveButton = document.getElementById("save");
 const removeButton = document.getElementById("remove");
 const clearMemoButton = document.getElementById("clearMemo");
 const copyMemoButton = document.getElementById("copyMemo");
+const fetchH1Button = document.getElementById("fetchH1");
 const openOptionsButton = document.getElementById("openOptions");
 
 let currentUrl = "";
+let currentTabId = null;
 
 async function getActiveTab() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -24,10 +26,12 @@ function setDisabled(disabled) {
   removeButton.disabled = disabled || !currentUrl;
   clearMemoButton.disabled = disabled;
   copyMemoButton.disabled = disabled;
+  fetchH1Button.disabled = disabled;
 }
 
 async function loadCurrentUrl() {
   const tab = await getActiveTab();
+  currentTabId = tab?.id ?? null;
   currentUrl = UrlMemoStorage.normalizeUrl(tab?.url || "");
   urlEl.textContent = currentUrl || "このページでは利用できません";
 
@@ -75,6 +79,25 @@ copyMemoButton.addEventListener("click", async () => {
   if (!memoEl.value) return;
   await navigator.clipboard.writeText(memoEl.value);
   setStatus("コピーしました。");
+});
+
+fetchH1Button.addEventListener("click", async () => {
+  if (!currentTabId) return;
+  try {
+    const [{ result } = {}] = await chrome.scripting.executeScript({
+      target: { tabId: currentTabId },
+      func: () => document.querySelector("h1")?.textContent?.trim() || "",
+    });
+    if (!result) {
+      setStatus("h1が見つかりませんでした。");
+      return;
+    }
+    memoEl.value = result.slice(0, 160);
+    memoEl.focus();
+    setStatus("h1をメモに反映しました。");
+  } catch (error) {
+    setStatus("h1を取得できませんでした。");
+  }
 });
 
 openOptionsButton.addEventListener("click", () => {

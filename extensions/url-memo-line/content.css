@@ -10,7 +10,7 @@
 
 #url-memo-line-root .url-memo-line-panel {
   display: grid;
-  grid-template-columns: 1fr auto auto auto;
+  grid-template-columns: 1fr auto auto auto auto;
   gap: 8px;
   align-items: center;
   padding: 8px;

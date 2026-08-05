@@ -81,6 +81,7 @@ function render(entry) {
     root.innerHTML = `
       <div class="url-memo-line-panel">
         <input type="text" maxlength="160" aria-label="URL memo">
+        <button type="button" class="url-memo-line-sm" title="開いているページのh1をメモに反映" aria-label="h1をメモに反映">H1</button>
         <button type="button" class="url-memo-line-sm" title="クリア" aria-label="メモをクリア">クリア</button>
         <button type="button" class="url-memo-line-sm" title="コピー" aria-label="メモをコピー">コピー</button>
         <button type="button" title="メモを隠す" aria-label="メモを隠す">×</button>
@@ -89,7 +90,7 @@ function render(entry) {
     document.documentElement.append(root);
 
     const input = root.querySelector("input");
-    const [clearBtn, copyBtn, closeBtn] = root.querySelectorAll("button");
+    const [h1Btn, clearBtn, copyBtn, closeBtn] = root.querySelectorAll("button");
 
     input.addEventListener("change", () => saveNote(input.value));
     input.addEventListener("keydown", (event) => {
@@ -98,6 +99,13 @@ function render(entry) {
         input.blur();
         saveNote(input.value);
       }
+    });
+    h1Btn.addEventListener("click", () => {
+      const text = document.querySelector("h1")?.textContent?.trim();
+      if (!text) return;
+      input.value = text.slice(0, 160);
+      input.focus();
+      saveNote(input.value);
     });
     clearBtn.addEventListener("click", () => {
       input.value = "";
