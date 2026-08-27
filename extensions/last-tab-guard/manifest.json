@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "Last Tab Guard",
+  "version": "1.0.0",
+  "description": "各ウィンドウにピン留めタブを常駐させ、最後のタブを閉じてもChromeウィンドウが消えないようにします",
+  "permissions": ["tabs", "storage"],
+  "background": {
+    "service_worker": "background.js"
+  }
+}
