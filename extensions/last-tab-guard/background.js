@@ -331,9 +331,22 @@ chrome.tabs.onRemoved.addListener(safe(async (tabId, removeInfo) => {
   // このウィンドウはガード対象外(="last"モードで複数ウィンドウ)。何もしない。
   if (guardTabId === undefined) return;
 
-  // 通常タブを閉じた結果ガードタブしか残っていない場合、
-  // ガードタブとは別に新しい通常タブを開く(ガードタブはアクティブにしない)。
-  focusNormalTab(windowId, guardTabId);
+  // 通常タブを閉じた結果ガードタブしか残らなかった場合だけ、新しい通常タブを
+  // 開いてガードタブがアクティブのまま残らないようにする。
+  // それ以外は Chrome 標準のタブ遷移に任せる(勝手に一番左へ飛ばさない)。
+  // ガードタブが選択されてしまうケースは onActivated 側で拾って回り込ませる。
+  let tabs;
+  try {
+    tabs = await chrome.tabs.query({ windowId });
+  } catch {
+    return; // ウィンドウが既に閉じている
+  }
+  const hasNormalTab = tabs.some((tab) => tab.id !== guardTabId);
+  if (!hasNormalTab) {
+    try {
+      await chrome.tabs.create({ windowId, url: GUARD_URL, active: true });
+    } catch {}
+  }
 }));
 
 // ガードタブがアクティブになった(クリックやCtrl+Tab等)場合、
