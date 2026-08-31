@@ -97,31 +97,36 @@ async function ensureGuard(windowId) {
 
     // storage.session が消えた場合などに備え、既存のピン留め新規タブを
     // 流用する。重複していれば先頭以外を片付ける。
-    const guards = await findGuardTabs(windowId);
     let guardTabId;
-    if (guards.length > 0) {
-      guardTabId = guards[0].id;
-      for (const dup of guards.slice(1)) {
-        try {
-          await chrome.tabs.remove(dup.id);
-        } catch {}
+    try {
+      const guards = await findGuardTabs(windowId);
+      if (guards.length > 0) {
+        guardTabId = guards[0].id;
+        for (const dup of guards.slice(1)) {
+          try {
+            await chrome.tabs.remove(dup.id);
+          } catch {}
+        }
+        if (guards[0].index !== 0) {
+          try {
+            await chrome.tabs.move(guardTabId, { index: 0 });
+          } catch {}
+        }
+      } else {
+        const tab = await chrome.tabs.create({
+          windowId,
+          url: GUARD_URL,
+          pinned: true,
+          active: false,
+          index: 0,
+        });
+        guardTabId = tab.id;
       }
-      if (guards[0].index !== 0) {
-        try {
-          await chrome.tabs.move(guardTabId, { index: 0 });
-        } catch {}
-      }
-    } else {
-      const tab = await chrome.tabs.create({
-        windowId,
-        url: GUARD_URL,
-        pinned: true,
-        active: false,
-        index: 0,
-      });
-      guardTabId = tab.id;
+    } catch {
+      return; // 途中でウィンドウが閉じられた
     }
 
+    if (guardTabId === undefined) return;
     await updateGuardMap((m) => {
       m[windowId] = guardTabId;
     });
@@ -144,7 +149,12 @@ async function removeGuard(windowId) {
     }
     if (guards.length === 0) return;
 
-    const allTabs = await chrome.tabs.query({ windowId });
+    let allTabs;
+    try {
+      allTabs = await chrome.tabs.query({ windowId });
+    } catch {
+      return; // ウィンドウが既に存在しない
+    }
     let survivors = allTabs.length - guards.length;
     for (const guard of guards) {
       if (survivors <= 0) {
@@ -164,27 +174,39 @@ async function removeGuard(windowId) {
 // 現在のモードと通常ウィンドウの数に応じて、各ウィンドウのガードタブの
 // 有無を調整する。すべてのイベントハンドラはこの関数を呼んで状態を合わせる。
 async function applyGuardPolicy() {
-  const mode = await getMode();
-  const windows = await chrome.windows.getAll();
-  const normalIds = windows
-    .filter((win) => win.type === "normal")
-    .map((win) => win.id);
+  try {
+    const mode = await getMode();
+    const windows = await chrome.windows.getAll();
+    const normalIds = windows
+      .filter((win) => win.type === "normal")
+      .map((win) => win.id);
 
-  if (mode === "all") {
-    for (const id of normalIds) await ensureGuard(id);
-    return;
-  }
+    if (mode === "all") {
+      for (const id of normalIds) await ensureGuard(id);
+      return;
+    }
 
-  // mode === "last"
-  if (normalIds.length === 1) {
-    await ensureGuard(normalIds[0]);
-  } else {
-    for (const id of normalIds) await removeGuard(id);
+    // mode === "last"
+    if (normalIds.length === 1) {
+      await ensureGuard(normalIds[0]);
+    } else {
+      for (const id of normalIds) await removeGuard(id);
+    }
+  } catch {
+    // ウィンドウ構成が途中で変わった等。次のイベントで再調整される。
   }
 }
 
-chrome.runtime.onInstalled.addListener(applyGuardPolicy);
-chrome.runtime.onStartup.addListener(applyGuardPolicy);
+// 非同期リスナー内で送出された例外を握りつぶし、
+// "Uncaught (in promise)" が拡張機能のエラーページに積み上がるのを防ぐ。
+function safe(handler) {
+  return (...args) => Promise.resolve()
+    .then(() => handler(...args))
+    .catch(() => {});
+}
+
+chrome.runtime.onInstalled.addListener(safe(applyGuardPolicy));
+chrome.runtime.onStartup.addListener(safe(applyGuardPolicy));
 
 chrome.windows.onCreated.addListener((win) => {
   if (win.type === "normal") applyGuardPolicy();
@@ -195,7 +217,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "sync" && changes.guardMode) applyGuardPolicy();
 });
 
-chrome.windows.onRemoved.addListener(async (windowId) => {
+chrome.windows.onRemoved.addListener(safe(async (windowId) => {
   await updateGuardMap((m) => {
     delete m[windowId];
   });
@@ -208,7 +230,7 @@ chrome.windows.onRemoved.addListener(async (windowId) => {
 
   // "last" モードで通常ウィンドウが残り1つになった場合、そのウィンドウを保護する。
   applyGuardPolicy();
-});
+}));
 
 // ガードタブに当たる直前にアクティブだった通常タブを覚えておき、
 // Ctrl+Tab(右回り) / Ctrl+Shift+Tab(左回り) のどちらでガードに
@@ -232,7 +254,12 @@ async function inferDirection(windowId, guardTabId) {
   const prevTabId = map[windowId];
   if (prevTabId === undefined) return "right";
 
-  const tabs = await chrome.tabs.query({ windowId });
+  let tabs;
+  try {
+    tabs = await chrome.tabs.query({ windowId });
+  } catch {
+    return "right";
+  }
   const normalTabs = tabs
     .filter((tab) => tab.id !== guardTabId)
     .sort((a, b) => a.index - b.index);
@@ -251,29 +278,38 @@ async function inferDirection(windowId, guardTabId) {
 // 二重に作られないようにする。
 async function focusNormalTab(windowId, guardTabId, direction = "right") {
   return withLock(windowId, async () => {
-    const tabs = await chrome.tabs.query({ windowId });
+    let tabs;
+    try {
+      tabs = await chrome.tabs.query({ windowId });
+    } catch {
+      return; // ウィンドウが既に閉じている
+    }
     const guard = tabs.find((tab) => tab.id === guardTabId);
     const normalTabs = tabs
       .filter((tab) => tab.id !== guardTabId)
       .sort((a, b) => a.index - b.index);
 
-    if (normalTabs.length === 0) {
-      await chrome.tabs.create({ windowId, url: GUARD_URL, active: true });
-      return;
-    }
+    try {
+      if (normalTabs.length === 0) {
+        await chrome.tabs.create({ windowId, url: GUARD_URL, active: true });
+        return;
+      }
 
-    const target =
-      direction === "left"
-        ? normalTabs[normalTabs.length - 1]
-        : normalTabs.find((tab) => tab.index > (guard ? guard.index : -1)) ||
-          normalTabs[0];
-    if (!target.active) {
-      chrome.tabs.update(target.id, { active: true });
+      const target =
+        direction === "left"
+          ? normalTabs[normalTabs.length - 1]
+          : normalTabs.find((tab) => tab.index > (guard ? guard.index : -1)) ||
+            normalTabs[0];
+      if (!target.active) {
+        await chrome.tabs.update(target.id, { active: true });
+      }
+    } catch {
+      // ウィンドウ/タブが操作中に閉じられた
     }
   });
 }
 
-chrome.tabs.onRemoved.addListener(async (tabId, removeInfo) => {
+chrome.tabs.onRemoved.addListener(safe(async (tabId, removeInfo) => {
   // ウィンドウごと閉じる場合は何もしない(＝ここでは復元しない)。
   // これにより「ガードタブしか残っていない状態でそれを閉じる」操作や
   // Chrome自体の終了(Cmd+Q等)でウィンドウを閉じることは妨げない。
@@ -298,13 +334,13 @@ chrome.tabs.onRemoved.addListener(async (tabId, removeInfo) => {
   // 通常タブを閉じた結果ガードタブしか残っていない場合、
   // ガードタブとは別に新しい通常タブを開く(ガードタブはアクティブにしない)。
   focusNormalTab(windowId, guardTabId);
-});
+}));
 
 // ガードタブがアクティブになった(クリックやCtrl+Tab等)場合、
 // 移動方向を推定して回り込んだ先の通常タブへ即座にフォーカスを戻し、
 // ガードタブを操作させない。通常タブがアクティブになった場合は、
 // 次にガードへ当たったときの方向推定に使うため位置を記録する。
-chrome.tabs.onActivated.addListener(async ({ tabId, windowId }) => {
+chrome.tabs.onActivated.addListener(safe(async ({ tabId, windowId }) => {
   const map = await getGuardMap();
   let isGuard = map[windowId] === tabId;
 
@@ -331,11 +367,11 @@ chrome.tabs.onActivated.addListener(async ({ tabId, windowId }) => {
 
   const direction = await inferDirection(windowId, tabId);
   focusNormalTab(windowId, tabId, direction);
-});
+}));
 
 // ガードタブが別ウィンドウへドラッグされた場合、元のウィンドウのマッピングを
 // 外し、モードに応じてガードの配置をやり直す。
-chrome.tabs.onDetached.addListener(async (tabId, detachInfo) => {
+chrome.tabs.onDetached.addListener(safe(async (tabId, detachInfo) => {
   const map = await getGuardMap();
   if (map[detachInfo.oldWindowId] === tabId) {
     await updateGuardMap((m) => {
@@ -343,9 +379,9 @@ chrome.tabs.onDetached.addListener(async (tabId, detachInfo) => {
     });
     applyGuardPolicy();
   }
-});
+}));
 
-chrome.tabs.onAttached.addListener(async (tabId, attachInfo) => {
+chrome.tabs.onAttached.addListener(safe(async (tabId, attachInfo) => {
   let tab;
   try {
     tab = await chrome.tabs.get(tabId);
@@ -360,4 +396,4 @@ chrome.tabs.onAttached.addListener(async (tabId, attachInfo) => {
     }
   });
   applyGuardPolicy();
-});
+}));
