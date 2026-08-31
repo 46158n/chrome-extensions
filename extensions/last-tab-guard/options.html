@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <title>Last Tab Guard 設定</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        font-size: 14px;
+        line-height: 1.6;
+        margin: 16px;
+        min-width: 360px;
+      }
+      fieldset {
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        padding: 12px 16px;
+      }
+      legend {
+        padding: 0 4px;
+        font-weight: 600;
+      }
+      label {
+        display: block;
+        margin: 8px 0 2px;
+      }
+      .desc {
+        color: #666;
+        margin: 0 0 12px 24px;
+      }
+      #status {
+        color: #1a7f37;
+        height: 1.4em;
+        margin-top: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <fieldset>
+      <legend>保護するウィンドウ</legend>
+
+      <label>
+        <input type="radio" name="mode" value="last" />
+        最後の1ウィンドウだけ保護
+      </label>
+      <p class="desc">
+        ウィンドウが複数あるときはどれも自由に閉じられます。残り1つになった
+        ウィンドウにだけピン留めタブを置き、最後のタブを閉じてもウィンドウが
+        消えないようにします。
+      </p>
+
+      <label>
+        <input type="radio" name="mode" value="all" />
+        すべてのウィンドウを保護
+      </label>
+      <p class="desc">
+        開いているすべてのウィンドウにピン留めタブを常駐させます。
+      </p>
+    </fieldset>
+
+    <div id="status"></div>
+
+    <script src="options.js"></script>
+  </body>
+</html>
