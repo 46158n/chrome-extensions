@@ -74,14 +74,54 @@ chrome.windows.onRemoved.addListener(async (windowId) => {
     delete map[windowId];
     await setGuardMap(map);
   }
+  const lastActive = await getLastActiveMap();
+  if (lastActive[windowId] !== undefined) {
+    delete lastActive[windowId];
+    await chrome.storage.session.set({ lastActiveTabs: lastActive });
+  }
   locks.delete(windowId);
 });
 
-// 通常タブが1つも無ければ新しく開き、あれば(ガードタブより右優先で)
-// アクティブにする。onRemoved由来の呼び出しとonActivated由来の呼び出しが
-// ほぼ同時に発生しうるため、ensureGuardと同じロックで直列化し、
-// 新規タブが二重に作られないようにする。
-async function focusNormalTab(windowId, guardTabId) {
+// ガードタブに当たる直前にアクティブだった通常タブを覚えておき、
+// Ctrl+Tab(右回り) / Ctrl+Shift+Tab(左回り) のどちらでガードに
+// 当たったのかを推定するために使う。
+async function getLastActiveMap() {
+  const { lastActiveTabs } = await chrome.storage.session.get("lastActiveTabs");
+  return lastActiveTabs || {};
+}
+
+async function setLastActiveTab(windowId, tabId) {
+  const map = await getLastActiveMap();
+  map[windowId] = tabId;
+  await chrome.storage.session.set({ lastActiveTabs: map });
+}
+
+// 直前のアクティブタブがガードの左隣(=通常タブの左端)なら、左回りで
+// ガードに当たったと判断して "left" を返す。右端なら "right"。
+// 判定材料が無い場合(クリックで直接ガードを選んだ等)は従来どおり "right"。
+async function inferDirection(windowId, guardTabId) {
+  const map = await getLastActiveMap();
+  const prevTabId = map[windowId];
+  if (prevTabId === undefined) return "right";
+
+  const tabs = await chrome.tabs.query({ windowId });
+  const normalTabs = tabs
+    .filter((tab) => tab.id !== guardTabId)
+    .sort((a, b) => a.index - b.index);
+  if (normalTabs.length < 2) return "right";
+
+  if (normalTabs[0].id === prevTabId) return "left";
+  return "right";
+}
+
+// 通常タブが1つも無ければ新しく開き、あれば direction に応じて
+// アクティブにする:
+//   "right" … ガードタブの右隣(=通常タブの左端)へ。右回りの回り込み。
+//   "left"  … 通常タブの右端へ。左回りの回り込み。
+// onRemoved由来の呼び出しとonActivated由来の呼び出しがほぼ同時に
+// 発生しうるため、ensureGuardと同じロックで直列化し、新規タブが
+// 二重に作られないようにする。
+async function focusNormalTab(windowId, guardTabId, direction = "right") {
   return withLock(windowId, async () => {
     const tabs = await chrome.tabs.query({ windowId });
     const guard = tabs.find((tab) => tab.id === guardTabId);
@@ -94,11 +134,13 @@ async function focusNormalTab(windowId, guardTabId) {
       return;
     }
 
-    const neighbor =
-      normalTabs.find((tab) => tab.index > (guard ? guard.index : -1)) ||
-      normalTabs[0];
-    if (!neighbor.active) {
-      chrome.tabs.update(neighbor.id, { active: true });
+    const target =
+      direction === "left"
+        ? normalTabs[normalTabs.length - 1]
+        : normalTabs.find((tab) => tab.index > (guard ? guard.index : -1)) ||
+          normalTabs[0];
+    if (!target.active) {
+      chrome.tabs.update(target.id, { active: true });
     }
   });
 }
@@ -127,12 +169,20 @@ chrome.tabs.onRemoved.addListener(async (tabId, removeInfo) => {
 });
 
 // ガードタブがアクティブになった(クリックやCtrl+Tab等)場合、
-// 右隣の通常タブへ即座にフォーカスを戻し、ガードタブを操作させない。
+// 移動方向を推定して回り込んだ先の通常タブへ即座にフォーカスを戻し、
+// ガードタブを操作させない。通常タブがアクティブになった場合は、
+// 次にガードへ当たったときの方向推定に使うため位置を記録する。
 chrome.tabs.onActivated.addListener(async ({ tabId, windowId }) => {
   const map = await getGuardMap();
-  if (map[windowId] !== tabId) return;
+  const guardTabId = map[windowId];
 
-  focusNormalTab(windowId, tabId);
+  if (guardTabId !== tabId) {
+    await setLastActiveTab(windowId, tabId);
+    return;
+  }
+
+  const direction = await inferDirection(windowId, guardTabId);
+  focusNormalTab(windowId, guardTabId, direction);
 });
 
 // ガードタブが別ウィンドウへドラッグされた場合、元のウィンドウは
